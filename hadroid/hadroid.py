@@ -53,6 +53,7 @@ import sys
 from multiprocessing import Process
 
 from docopt import docopt
+from setproctitle import setproctitle
 
 from hadroid import C, __version__
 
@@ -68,9 +69,15 @@ def spawn_client(clients, client_type, room):
     args = (C.GITTER_PERSONAL_ACCESS_TOKEN, )
     client = client_class(*args)
     room_id = client.resolve_room_id(room)
-    process_name = "{0} {1}".format(client_class.__name__, room)
+    process_name = "{0}: {1} {2}".format(
+        sys.argv[0], client_class.__name__, room)
     client.room_id = room_id
-    p = Process(target=client.listen, name=process_name)
+
+    def init_client():
+        setproctitle(process_name)
+        client.listen()
+
+    p = Process(target=init_client, name=process_name)
     clients[client_id] = dict(process=p,
                               room=room,
                               client_type=client_type)
